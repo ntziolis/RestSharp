@@ -32,6 +32,34 @@ namespace RestSharp.Tests
 	{
 		private const string GuidString = "AC1FC4BC-087A-4242-B8EE-C53EBE9887A5";
 
+        [Fact]
+        public void Custom_TimeSpan_Deserializer_Overrides_Default()
+        {
+            var doc = File.ReadAllText(Path.Combine("SampleData", "timespans.txt"));
+
+            var d = new JsonDeserializer();
+            d.CustomDeserializers.InsertDeserializer<TimeSpan>(value =>
+                {
+                    return new TimeSpan(5, 0, 0);
+                });
+            d.CustomDeserializers.InsertDeserializer<TimeSpan?>(value =>
+            {
+                return new TimeSpan(5, 0, 0);
+            });
+
+            var response = new RestResponse { Content = doc };
+            var payload = d.Deserialize<TimeSpanTestStructure>(response);
+
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.Tick);
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.Millisecond);
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.Second);
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.Minute);
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.Hour);
+            Assert.Null(payload.NullableWithoutValue);
+            Assert.NotNull(payload.NullableWithValue);
+            Assert.Equal(new TimeSpan(5, 0, 0), payload.NullableWithValue.Value);
+        }
+
 		[Fact]
 		public void Can_Deserialize_4sq_Json_With_Root_Element_Specified()
 		{

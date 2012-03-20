@@ -31,10 +31,12 @@ namespace RestSharp.Deserializers
 		public string Namespace { get; set; }
 		public string DateFormat { get; set; }
 		public CultureInfo Culture { get; set; }
+        public CustomDeserializerCollection CustomDeserializers { get; private set; }
 
 		public JsonDeserializer()
 		{
 			Culture = CultureInfo.InvariantCulture;
+            CustomDeserializers = new CustomDeserializerCollection();
 		}
 
 		public T Deserialize<T>(RestResponse response) where T : new()
@@ -63,7 +65,13 @@ namespace RestSharp.Deserializers
 			}
 			else
 			{
+                var objType = target.GetType();
 				var root = FindRoot(response.Content);
+                if (CustomDeserializers.Contains(objType))
+                {
+                    return (T)CustomDeserializers.Deserialize(objType, root.AsString(Culture));
+                }
+
 				Map(target, root);
 			}
 
@@ -98,6 +106,13 @@ namespace RestSharp.Deserializers
 				{
 					continue;
 				}
+
+                if (CustomDeserializers.Contains(type))
+                {
+                    object custMappedValue = CustomDeserializers.Deserialize(type, json.AsString(Culture));
+                    prop.SetValue(x, custMappedValue, null);
+                    continue;
+                }
 
 				// check for nullable and extract underlying type
 				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
